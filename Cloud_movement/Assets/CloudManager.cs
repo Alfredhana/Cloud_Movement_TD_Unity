@@ -5,70 +5,69 @@ using UnityEngine.UI;
 
 public class CloudManager : MonoBehaviour
 {
-    private Dictionary<Image, float> cloudData;
+    private Dictionary<GameObject, float> cloudData;
     float canvasWidth;
-    float canvasGap;
+    //private float smoothTime = 0.8f;
+    public float randXRange;
 
     // Start is called before the first frame update
     void Start()
     {
-        cloudData = new Dictionary<Image, float>();
+        cloudData = new Dictionary<GameObject, float>();
 
         // Find the Canvas named "clouds"
-        GameObject cloudsCanvas = GameObject.Find("clouds");
-        if (cloudsCanvas != null)
+		GameObject groundObject = GameObject.Find("ground");
+		Renderer groundRenderer = groundObject.GetComponent<Renderer>();
+		canvasWidth = groundRenderer.bounds.size.x / 3;
+		
+        GameObject cloudsObject  = GameObject.Find("clouds");
+        if (cloudsObject != null)
         {
-            // Get all Image components under the Canvas and add them to the dictionary
-            Image[] cloudImages = cloudsCanvas.GetComponentsInChildren<Image>();
-            RectTransform canvasRect = cloudsCanvas.GetComponent<RectTransform>();
-            canvasWidth = canvasRect.rect.width;
-            //canvasGap = canvasWidth / cloudImages.Length / 4f;
-            int i = cloudImages.Length / 2 - cloudImages.Length;
-            foreach (Image cloud in cloudImages)
+            Transform[] cloudCubes = cloudsObject.GetComponentsInChildren<Transform>();
+            int i = cloudCubes.Length / 2;
+            foreach (Transform cloudCubeTransform in cloudCubes)
             {
-                // float randomNumber;
-                // do
-                // {
-                //     randomNumber = Random.Range(1f, 100f);
-                // }
-                // while (cloudData.ContainsValue(randomNumber)); // Check for duplicates
-                //float zDirection = cloud.transform.GetSiblingIndex() + 1;
-                float zDirection = i++;
-                //float randomNumber = Mathf.Lerp(1, 10, zDirection);
+                // Filter out the clouds object itself
+                if (cloudCubeTransform != cloudsObject.transform)
+                {
+                    GameObject cloudCube = cloudCubeTransform.gameObject;
+                    float zDirection = i++;
+                    cloudData.Add(cloudCube, zDirection);
 
-                cloudData.Add(cloud, zDirection);
-
-                // Assign z direction based on cloud index
-                
-                float randomX = Random.Range(-canvasWidth/2f, canvasWidth/2f);
-                cloud.transform.localPosition = new Vector3(cloud.transform.localPosition.x + randomX, cloud.transform.localPosition.y, zDirection);
+                    // Assign z direction based on cloud index
+                    float randomX = Random.Range(-randXRange, randXRange);
+                    Vector3 newPosition = cloudCube.transform.localPosition;
+                    newPosition.x += randomX;
+                    newPosition.z = zDirection;
+                    cloudCube.transform.localPosition = newPosition;
+                }
             }
         }
     }
 
-    // Map the xDir value from the range [0, 1] to the desired movement range
-    float movementRange = 1f; // Adjust this to fit your desired range
-
     // Update is called once per frame
-    public void UpdateCloud(float xDir)
+    public void UpdateCloud(Vector3 dir)
     {
-
-        foreach (KeyValuePair<Image, float> cloudPair in cloudData)
+        foreach (KeyValuePair<GameObject, float> cloudPair in cloudData)
         {
-            Image cloud = cloudPair.Key;
-            float randomNumber = cloudPair.Value;
+            GameObject cloudCube = cloudPair.Key;
+            float zDirection = cloudPair.Value;
 
-            // Map the xDir value from the range [-1, 1] to the range [0, canvasWidth]
-            float targetX = Remap(xDir, -1f, 1f, 0, canvasWidth);
+            // Calculate the new position of the cloud
+            Vector3 newPosition = cloudCube.transform.localPosition;
+            newPosition.x = dir.x * zDirection * Mathf.Clamp(zDirection, 0.1f, 1.5f);
 
-            // Set the cloud's position based on the mapped x value
-            Vector3 newPosition = new Vector3(targetX + randomNumber * movementRange, cloud.transform.position.y, cloud.transform.position.z);
-            cloud.transform.position = newPosition;
+            // Keep the cloud within the camera's view
+            float halfCanvasWidth = canvasWidth / 2;
+            float cloudWidth = cloudCube.GetComponent<Renderer>().bounds.size.x / 2f;
+			
+
+            float minX = -halfCanvasWidth + cloudWidth;
+            float maxX = halfCanvasWidth - cloudWidth;
+            newPosition.x = Mathf.Clamp(newPosition.x, minX, maxX);
+
+            // Update the cloud's position
+            cloudCube.transform.localPosition = newPosition;
         }
-    }
-
-    float Remap(float value, float fromMin, float fromMax, float toMin, float toMax)
-    {
-        return (value - fromMin) * (toMax - toMin) / (fromMax - fromMin) + toMin;
     }
 }

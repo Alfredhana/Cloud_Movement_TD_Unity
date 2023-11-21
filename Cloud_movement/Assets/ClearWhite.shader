@@ -50,7 +50,7 @@ Shader "Custom/WhiteToTransparent"
                 float grayscale = dot(color.rgb, float3(0.299, 0.587, 0.114));
 
                 // Set alpha to 0 if the pixel is close to white
-                float threshold = 0.9;
+                float threshold = 0.6;
                 color.a = (grayscale > threshold) ? 0.0 : color.a;
 
                 return color;
