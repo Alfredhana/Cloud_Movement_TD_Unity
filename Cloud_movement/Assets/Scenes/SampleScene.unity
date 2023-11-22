@@ -1929,7 +1929,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d807e586098f40f4a4513d4138a3454, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  randXRange: 0.01
+  randXRange: 100
 --- !u!4 &798055673
 Transform:
   m_ObjectHideFlags: 0
