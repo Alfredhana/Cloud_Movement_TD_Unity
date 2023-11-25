@@ -1,6 +1,9 @@
 import oscP5.*;
 import netP5.*;
-import codeanticode.syphon.*;
+//import codeanticode.syphon.*;  // Comment out the Syphon import
+import spout.*;  // Add the Spout import
+import java.util.HashMap;
+import java.lang.Object;
 
 private static final float IDEAL_FRAME_RATE = 30.0;
 
@@ -8,183 +11,160 @@ ObservableRect observableRect1;
 ObservableRect observableRect2;
 ObserverRect observerRect;
 
-SyphonServer server;
+BulletManager bulletManager;
+
+//SyphonServer server;  // Comment out the SyphonServer declaration
+
+Spout spout;  // Add the Spout declaration
 
 OscP5 oscP5;
+NetAddress oscSend;
 float rectWidth = 100;   // Width of the rectangles
 float rectHeight = 50;   // Height of the rectangles
-
-float rectX1;
-float rectY1;
-float rectX2;
-float rectY2;
 
 float rectStartX;  // X position of the first rectangle
 float rectStartY;  // Y position of the first rectangle
 float rect2X;  // X position of the second rectangle
 float rect2Y;  // Y position of the second rectangle
 
+HashMap<String, Float> oscValues;
+
 float canvasWidth = 1200;
 float canvasHeight = 800;
+Boolean isStarted = false;
+float prevGap = -1;
+float prevGapThreshold = 0.12; // Magic Number, Don't Ask
 
 void setup() {
   size(1200, 800, P2D);
-  
+   
+  // Set the blend mode to achieve blending effect
+  blendMode(ADD);
   rectMode(CENTER);
   
-  server = new SyphonServer(this, "ProcessingServer");
-  // Create an instance of OscP5 to receive OSC messages
+  //server = new SyphonServer(this, "ProcessingServer");
+  spout = new Spout(this);  // Initialize the Spout object
+  spout.setSenderName("ProcessingServer");
+  
   oscP5 = new OscP5(this, 7001);  // Adjust the port number as needed
+  oscSend = new NetAddress("127.0.0.1", 7002);
 
-  // Initialize the positions of the rectangles
-  rectStartX = width / 2;    // Start at the center of the window
+  // Initialize the dictionary for OSC values
+  oscValues = new HashMap<String, Float>();
+  
+  rectStartX = width / 2;
   rectStartY = height / 2;
-  rect2X = rectStartX;       // Same initial position as rect1
+  rect2X = rectStartX;
   rect2Y = rectStartY;
   
-  // Create instances of ObservableRect and ObserverRect
-  observableRect1 = new ObservableRect(rectStartX, rectStartY, rectWidth, rectWidth, 255);
-  observableRect2 = new ObservableRect(rectStartX, rectStartY, rectWidth, rectWidth, 0);
+  observableRect1 = new ObservableRect(rectStartX / 2, rectStartY, rectWidth, rectWidth, 255);
+  observableRect2 = new ObservableRect(rectStartX * 2, rectStartY, rectWidth, rectWidth, 150);
   observerRect = new ObserverRect(observableRect1, 0, 400);
+  
+  // Instantiate the bullet manager
+  bulletManager = new BulletManager(observableRect1, observableRect2);
 }
 
 void draw() {
-  // Clear the background
   background(0);
+  testSendOSCMessage();
   
-  // Draw the rectangles
-  // fill(255);
-  observableRect1.update(rectX1, rectY1);
-  observableRect1.display();
+  //if (!isStarted || prevGap <= 0){
+  //  prevGap = abs(oscValues.getOrDefault("rectX2", 1.0) - oscValues.getOrDefault("rectX1", 1.0));
+  //  isStarted = prevGap > prevGapThreshold ? true : false;
+  //}
   
-  observableRect2.update(rectX2, rectY2);
-  observableRect2.display();
+  //float rectX1 = 0.2;
+  //float rectY1 = 0.6;
+  //float rectX2 = 0.8;
+  //float rectY2 = 0.6;
   
-  //observerRect.update(0, -400);
-  //observerRect.display();
+  //if (isStarted){
   
-  // Send the window frame to the Syphon server
-  server.sendScreen();
+  //  rectX1 = oscValues.getOrDefault("rectX1", 0.5);
+  //  rectY1 = oscValues.getOrDefault("rectY1", 0.5);
+  //  rectX2 = oscValues.getOrDefault("rectX2", 0.5);
+  //  rectY2 = oscValues.getOrDefault("rectY2", 0.5);
+
+  //  // Update the window size based on the OSC values
+  //  float shoulderLX = oscValues.getOrDefault("shoulderLX", 1.0);
+  //  float shoulderLY = oscValues.getOrDefault("shoulderLY", 1.0);
+  //  float shoulderRX = oscValues.getOrDefault("shoulderRX", 1.0);
+  //  float shoulderRY = oscValues.getOrDefault("shoulderRY", 1.0);
+  //  float hipX = oscValues.getOrDefault("hipX", 1.0);
+  //  float hipY = oscValues.getOrDefault("hipY", 1.0);
+    
+  //  // Calculate the dimensions of the rectangle based on shoulderX and shoulderY
+  //  float rectWidth = map(abs(shoulderRX - shoulderLX), 0, 1, 0.4, 0.6) * canvasWidth;
+  //  float rectHeight = map(abs(shoulderRY - hipY), 0, 1, 0.3, 0.5) * canvasHeight * 0.9;
+  
+  //  // Draw the rectangle at the center of the window
+  //  float bigRectX = map(shoulderLX, 0, 1, 0.2, 0.8) * canvasWidth;
+  //  float bigRectY = map(shoulderLY, 0, 1, 0.2, 0.8) * canvasHeight;
+    
+  //  push();
+  //    fill(100);
+  //    rect(bigRectX, bigRectY, rectWidth, rectHeight);
+  //  pop();
+    
+  //  bulletManager.checkFire();
+  //  bulletManager.update();
+  //  // Update and draw the bullets
+  //  if (bulletManager.checkCollide()){
+  //    OscMessage msg = new OscMessage("/collided");
+  //    msg.add(1);
+  //    sendOSCMessage(msg);
+  //    print("collided");
+  //  }
+  //  bulletManager.draw();
+  //}
+  
+  //observableRect1.update(rectX1, rectY1);
+  //observableRect1.display();
+  
+  //observableRect2.update(rectX2, rectY2);
+  //observableRect2.display();
+  
+  //// Send the window frame to the Spout framework
+  //spout.sendTexture();  // Replace server.sendScreen() with spout.sendTexture()
+  
+  //server.sendScreen();
 }
 
 void oscEvent(OscMessage message) {
-  // Check if the OSC message is for updating circleX and circleY values
-  if (message.checkAddrPattern("/circleX1")) {
-    // Extract the values from the OSC message
-    float receivedX = message.get(0).floatValue();
-    
-    // Update the circleX and circleY values
-    rectX1 = receivedX;
-  }
-  if (message.checkAddrPattern("/circleY1")) {
-    float receivedY = message.get(0).floatValue();
-    rectY1 = receivedY;
-  }
-  
-  if (message.checkAddrPattern("/circleX2")) {
-    // Extract the values from the OSC message
-    float receivedX = message.get(0).floatValue();
-    
-    // Update the circleX and circleY values
-    rectX2 = receivedX;
-  }
-  if (message.checkAddrPattern("/circleY2")) {
-    float receivedY = message.get(0).floatValue();
-    rectY2 = receivedY;
+  String address = message.addrPattern(); // Extract the OSC address pattern
+  address = address.substring(1); // Remove the leading "/"
+
+  // Check if the address is valid and update the corresponding value in the dictionary
+  if (address != null && !address.isEmpty()) {
+    float value = message.get(0).floatValue();
+    oscValues.put(address, value);
   }
 }
 
-
-// ObservableRect class
-class ObservableRect {
-  public float x;            // X position of the rectangle
-  public float y;            // Y position of the rectangle
-  float velX;
-  float velY;
-  public float rectWidth;    // Width of the rectangle
-  public float rectHeight;   // Height of the rectangle
-  public int rectColor;      // Color of the rectangle
-  float rotationAngle;
-  
-  ObservableRect(float x, float y, float rectWidth, float rectHeight, int rectColor) {
-    this.x = x;
-    this.y = y;
-    this.rectWidth = rectWidth;
-    this.rectHeight = rectHeight;
-    this.rectColor = rectColor;
-  }
-  
-  void update(float x, float y) {
-    // Map the circleX and circleY values to the window dimensions
-    float mappedX = map(x, 0, 1, 0, width);
-    float mappedY = map(y, 0, 1, 0, height);
-    
-    // Update the position of the first rectangle gradually
-    float easing = 0.05;   // Easing value for smooth movement
-    float targetX = mappedX - rectWidth / 2;
-    float targetY = mappedY - rectHeight / 2;
-    float dx = targetX - this.x;
-    float dy = targetY - this.y;
-    this.velX = dx * easing;
-    this.velY = dy * easing;
-    
-    // Check if the updated position goes beyond the left or right boundary
-    if (this.x < this.rectWidth / 2) {
-      this.x = this.rectWidth / 2;  // Reset x to the left edge
-      this.velX = -0.5 * velX;  // Change velocity direction to go right
-    } else if (targetX > width - rectWidth / 2) {
-      this.x = width - rectWidth / 2;  // Reset x to the right edge
-      this.velX = -0.5 * velX;  // Change velocity direction to go left
-    }
-  
-    // Check if the updated position goes beyond the top or bottom boundary
-    if (targetY < rectHeight / 2) {
-      this.y = rectHeight / 2;  // Reset y to the top edge
-      this.velY = -0.5 * this.velY;  // Change velocity direction to go down
-    } else if (targetY > height - rectHeight / 2) {
-      this.y = height - rectHeight / 2;  // Reset y to the bottom edge
-      this.velY = -0.5 * this.velY;  // Change velocity direction to go up
-    }
-    
-    rotationAngle += (0.1 + 0.04 * sqrt(this.x + this.y)) * PI / IDEAL_FRAME_RATE;
-  }
-  
-  void display() {
-    this.x += this.velX;
-    this.y += this.velY;
-    push();
-      fill(this.rectColor);
-      stroke(255);
-      
-      translate(this.x, this.y);
-      push();
-        rotate(this.rotationAngle);
-        rect(0, 0, this.rectWidth, this.rectHeight);
-      pop();
-    pop();
-  }
+void sendOSCMessage(OscMessage msg){
+  oscP5.send(msg, oscSend);
 }
 
-// ObserverRect class
-class ObserverRect {
-  ObservableRect observableRect;   // Reference to the observable rectangle
-  float offsetX;          // Offset distance from the observable rectangle
-  float offsetY;
-  
-  ObserverRect(ObservableRect observableRect, float offsetX, float offsetY) {
-    this.observableRect = observableRect;
-    this.offsetX = offsetX;
-    this.offsetY = offsetY;
+long lastBulletTime = 0;
+final int FIRE_COOLDOWN = 5000;
+
+void testSendOSCMessage(){
+  long currentTime = System.currentTimeMillis();
+  OscMessage msg = new OscMessage("/collided");
+  if (currentTime - lastBulletTime >= FIRE_COOLDOWN) {
+    msg.add("bang");
+    lastBulletTime = currentTime;
   }
-  
-  void update(float offsetX, float offsetY) {// Update the position of the second rectangle procedurally based on the first rectangle
-    this.offsetX = offsetX;   // Offset distance from the first rectangle
-    this.offsetY = offsetY;
+  if (currentTime - lastBulletTime < FIRE_COOLDOWN / 4) {
+    msg.add(0);
   }
-  
-  void display() {
-    float rectX = observableRect.x + this.offsetX;
-    float rectY = observableRect.y + this.offsetY;
-    rect(rectX, rectY, observableRect.rectWidth, observableRect.rectHeight);
+  sendOSCMessage(msg);
+}
+
+
+void keyPressed() {
+  if (key == 'q' || key == 'Q') {
+    exit(); // Exit the program when 'q' or 'Q' key is pressed
   }
 }
